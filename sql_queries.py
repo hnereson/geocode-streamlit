@@ -1,13 +1,7 @@
 import psycopg2 
 import pandas as pd
-import os
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 import streamlit as st 
-
-# Load the credentials from the .env file
-load_dotenv()
-
 
 HOST = st.secrets["POSTGRES_HOST"]
 DB = st.secrets["POSTGRES_DB"]
