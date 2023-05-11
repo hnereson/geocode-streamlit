@@ -77,6 +77,14 @@ if password == "Admin":
                 overlay=False,
                 control=True
             ).add_to(m)
+
+            esri_labels = folium.TileLayer(
+                tiles='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                attr='Esri',
+                name='Esri Labels',
+                overlay=True,
+                control=True
+            ).add_to(m)
             
             esri_street_map.add_to(m)
 
