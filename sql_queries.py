@@ -30,7 +30,7 @@ def run_sql_query(sql_query):
     return df 
 
 all_tenants = """
-select distinct on (f.site_code , a.id) f.site_code, a.id, min(o.move_in_date) as move_in_date
+select distinct on (f.site_code , a.id) f.site_code, a.id, o.id as occ_id, min(o.move_in_date) as move_in_date
     , max((o.moved_out_at at time zone 'UTC' at time zone f.time_zone )::date) as moved_out_at
     , o2.moved_out
     , round(avg(((coalesce(o.moved_out_at, now())::date - o.move_in_date)/30.4167))::numeric, 2) as tenancy
@@ -38,13 +38,18 @@ select distinct on (f.site_code , a.id) f.site_code, a.id, min(o.move_in_date) a
     	then true else false end as autopay 
     , o2.insurance_id 
     , o2.monthly_rate 
+    , sum(l.chg) as write_offs
+    , case when sum(l.chg) < 0 then true else false end as bad_debt
 from accounts a 
 	inner join occupancy_groups og on og.account_id = a.id 
 	left join occupancies o on o.occupancy_group_id = og.id 
 	left join occupancies o2 on o2.occupancy_group_id = og.id 
 	inner join units u on u.id = o.unit_id 
     inner join facilities f on f.id = u.facility_id
-group by f.site_code , a.id , o2.moved_out , o2.auto_pay_id , o2.insurance_id , o2.monthly_rate , o2.move_in_date 
+	left join ledgers l on l.occupancy_id = o.id and l.charge_type =7 
+		and (lower(l.description) like '%write off%' or lower(l.description) like '%write-off%')
+		and (lower(l.description) not like '%move out%' and lower(l.description) not like '%move-out%')
+group by f.site_code , a.id , o.id, o2.moved_out , o2.auto_pay_id , o2.insurance_id , o2.monthly_rate , o2.move_in_date 
 order by f.site_code , a.id, o2.move_in_date desc  ;
 """
 

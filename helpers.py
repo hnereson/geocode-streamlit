@@ -39,7 +39,9 @@ def specific_rds_geocoded(tenants, rds, current, master_accounts):
                 "full_fips": account_data["census"]["full_fips"],
                 "site_code": rd_tenants.loc[rd_tenants['id'] == account_id, 'site_code'].values[0],
                 "move_in_date": rd_tenants.loc[rd_tenants['id'] == account_id, 'move_in_date'].values[0],
-                "moved_out_at": rd_tenants.loc[rd_tenants['id'] == account_id, 'moved_out_at'].values[0]
+                "moved_out_at": rd_tenants.loc[rd_tenants['id'] == account_id, 'moved_out_at'].values[0],
+                "bad_debt": rd_tenants.loc[rd_tenants['id'] == account_id, 'bad_debt'].values[0],
+                "write_offs": rd_tenants.loc[rd_tenants['id'] == account_id, 'write_offs'].values[0]
             }
             data_list.append(data)
 
@@ -47,19 +49,21 @@ def specific_rds_geocoded(tenants, rds, current, master_accounts):
     final_df = pd.DataFrame(data_list)
 
     # Select the required columns
-    final_df = final_df[['site_code', 'account_id', 'move_in_date', 'moved_out_at', 'lat', 'lon', 'full_fips']]
+    final_df = final_df[['site_code', 'account_id', 'move_in_date', 'moved_out_at', 'lat', 'lon', 'full_fips', 'bad_debt', 'write_offs']]
 
     return final_df
 
-def generate_date_dict(df):
+def generate_date_dict(df, facilities):
     data_dict = {}
-    start_date = pd.Timestamp('2019-05-31')
+    min_acq_date = facilities[facilities['rd'].isin(df['site_code'])]['acq_date'].min()
+    start_date = max(pd.Timestamp('2019-05-31'), pd.Timestamp(min_acq_date))
     end_date = pd.Timestamp.today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)  # Last day of current month
     date_range = pd.date_range(start=start_date, end=end_date, freq='M')
 
     for _, row in df.iterrows():
         account_id = row['account_id']
-        move_in_date = row['move_in_date']
+        acq_date = facilities.loc[facilities['rd'] == row['site_code'], 'acq_date'].values[0]
+        move_in_date = max(row['move_in_date'], acq_date)
         moved_out_at = row['moved_out_at'] if pd.notnull(row['moved_out_at']) else (end_date + relativedelta(days=1))
 
         if account_id not in data_dict:
@@ -104,6 +108,7 @@ def dict_to_geojson(data_dict, rd_colors):
                         "stroke": "false",
                         "radius": 5
                     },
+                    "popup": f"{account_data['site_code']} account {int(account_id)}",  # Add popup property
                 },
             }
             features.append(feature)
