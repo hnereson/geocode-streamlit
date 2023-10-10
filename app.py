@@ -26,7 +26,7 @@ def blank(): return st.write('')
 
 def password_authenticate(pwsd):
 
-    if pwsd == st.secrets["ADMIN"]:
+    if pwsd in st.secrets["ADMIN"]:
         return "Admin"
 
 tenants = run_sql_query(all_tenants)
@@ -75,7 +75,7 @@ if password == "Admin":
                 first_geocoded_rds = geocoded_rds[geocoded_rds['rd'] == selected_rds[0]]
             else:
                 st.warning("No RD selected. Please select at least one RD.")
-            m = folium.Map(location=[first_geocoded_rds["latitude"].iloc[0], first_geocoded_rds["longitude"].iloc[0]], zoom_start=11, tiles=None)
+            m = folium.Map(location=[first_geocoded_rds["latitude"].iloc[0], first_geocoded_rds["longitude"].iloc[0]], zoom_start=11, tiles=None, control_scale=True)
 
             esri_street_map = folium.TileLayer(
                 tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
